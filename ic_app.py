@@ -284,7 +284,7 @@ def open_add_part():
 
     def save_part():
         part_num=partNo_var.get().strip()
-        print("You typed:", part_num)
+       
         if not part_num:
             messagebox.showerror("Error", "Part Number is required!", parent=addPart_i)
             return
