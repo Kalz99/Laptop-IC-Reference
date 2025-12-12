@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import sqlite3
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk # noqa: F401
 from tkinter import filedialog
 import shutil
 
