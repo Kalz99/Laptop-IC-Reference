@@ -1,0 +1,15 @@
+name: Simple Check
+
+on: [push]  # Runs every time you push code
+
+jobs:
+  check-code:
+    runs-on: ubuntu-latest  # Uses a free computer in the cloud
+    steps:
+      - uses: actions/checkout@v4  # Gets your code
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'  # Change if you use a different Python version
+      - name: Say Hello
+        run: echo "Your code is being checked!"
