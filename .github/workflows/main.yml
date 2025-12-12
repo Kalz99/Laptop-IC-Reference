@@ -1,15 +1,16 @@
-name: Simple Check
+name: Python Check
 
-on: [push]  # Runs every time you push code
+on: [push]
 
 jobs:
-  check-code:
-    runs-on: ubuntu-latest  # Uses a free computer in the cloud
+  check:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4  # Gets your code
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
         with:
-          python-version: '3.12'  # Change if you use a different Python version
-      - name: Say Hello
-        run: echo "Your code is being checked!"
+          python-version: '3.12'
+      - name: Install checker
+        run: pip install flake8
+      - name: Check code style
+        run: flake8 .  # Checks all your Python files
