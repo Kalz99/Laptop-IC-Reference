@@ -1,14 +1,13 @@
 name: Build and Release Executable
-permissions:
-  contents: write   # This fixes the 403 permission error
+
 on:
   push:
     tags:
-      - 'v*'  # Triggers only when you push a tag like v1.0, v1.1, etc.
+      - 'v*'
 
 jobs:
   build:
-    runs-on: windows-latest  # Uses a Windows machine to build .exe
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -22,9 +21,10 @@ jobs:
 
       - name: Build executable
         run: pyinstaller --onefile --windowed --name "TraceCore" ic_app.py
-        # Change "ic_app.py" only if your main file has a different name
 
       - name: Upload executable to release
         uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # Use PAT here
         with:
           files: dist/TraceCore.exe
