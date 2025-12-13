@@ -487,7 +487,7 @@ tree.column("image", width=35, anchor="center")
 tree.column("edit", width=35, anchor="center")
 tree.column("delete", width=35, anchor="center")
 
-from tkinter import ttk
+
 
 style = ttk.Style()
 
@@ -746,8 +746,8 @@ def open_edit_part(part_id):
             if current_img_path and os.path.exists(current_img_path):
                 try:
                     os.remove(current_img_path)
-                except: pass
-
+                except OSError:  # noqa: E722
+                    pass
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
         cursor.execute(
