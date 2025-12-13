@@ -58,4 +58,8 @@ jobs:
           name: Release ${{ github.ref_name }}
           files: dist/**/*.exe
         env:
+<<<<<<< HEAD
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+=======
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+>>>>>>> 23efb80c8a9d62186fad3a25bb7a2eb51a12b209
