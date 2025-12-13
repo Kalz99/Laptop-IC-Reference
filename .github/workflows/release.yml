@@ -1,5 +1,6 @@
 name: Build and Release Executable
-
+permissions:
+  contents: write   # This fixes the 403 permission error
 on:
   push:
     tags:
@@ -26,4 +27,4 @@ jobs:
       - name: Upload executable to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/TraceCore+r.exe
+          files: dist/TraceCore.exe
