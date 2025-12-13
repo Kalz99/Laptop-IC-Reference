@@ -488,7 +488,6 @@ tree.column("edit", width=35, anchor="center")
 tree.column("delete", width=35, anchor="center")
 
 
-
 style = ttk.Style()
 
 # Use default theme (important)
@@ -617,7 +616,8 @@ def on_table_click(event):
             if img_path and os.path.exists(img_path):
                 try:
                     os.remove(img_path)
-                except: pass
+                except OSError:  # noqa: E722
+                    pass
 
             messagebox.showinfo("Deleted", "IC part deleted successfully!")
             load_parts()
