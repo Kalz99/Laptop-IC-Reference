@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import sqlite3
-from PIL import Image, ImageTk  # noqa: F401
 from tkinter import filedialog
 import shutil
 
@@ -617,7 +616,7 @@ def on_table_click(event):
             if img_path and os.path.exists(img_path):
                 try:
                     os.remove(img_path)
-                except:
+                except:# noqa: E722
                     pass
 
             messagebox.showinfo("Deleted", "IC part deleted successfully!")
@@ -747,7 +746,7 @@ def open_edit_part(part_id):
             if current_img_path and os.path.exists(current_img_path):
                 try:
                     os.remove(current_img_path)
-                except:
+                except:# noqa: E722
                     pass
 
         conn = sqlite3.connect(DB_FILE)
