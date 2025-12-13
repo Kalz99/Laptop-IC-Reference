@@ -1,3 +1,4 @@
+[![Python Check](https://github.com/Kalz99/Laptop-IC-Reference/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/Kalz99/Laptop-IC-Reference/actions/workflows/main.yml)
 # Laptop-IC-Reference
 A simple desktop application built with Python and Tkinter for laptop repair technicians to manage a personal database of motherboard ICs.
 
