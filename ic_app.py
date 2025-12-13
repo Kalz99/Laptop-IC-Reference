@@ -2,12 +2,12 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import sqlite3
-from PIL import Image, ImageTk # noqa: F401
+from PIL import Image, ImageTk  # noqa: F401
 from tkinter import filedialog
 import shutil
 
 root = tk.Tk()
-root.title("IC Finder 1.0")
+root.title("TraceCore+")
 root.geometry("1200x800")
 root.configure(bg="#f0f0f0")
 
@@ -35,9 +35,17 @@ conn.close()
 IMAGE_DIR = "pinout_images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
+# Load the View icon (do this once, outside any function)
+view_icon_path = "view_ico.png"  # put your PNG file name here
+if os.path.exists(view_icon_path):
+    img = Image.open("view_ico.png").resize((20, 20), Image.LANCZOS)
+    view_icon = ImageTk.PhotoImage(img)
+else:
+    view_photo = None  # fallback if file not found
+
 title_label = tk.Label(
     root,
-    text="Laptop IC Reference",
+    text="TraceCore+",
     font=("Lato", 20, "bold"),
     bg="#f0f0f0",
     fg="#2c3e50",
@@ -414,8 +422,11 @@ def open_add_part():
 
 # End of the Add a IC
 
-search_button = tk.Button(search_frame, text="Search", command=on_search)
-search_button.pack(side="left", padx=5)
+# search_button = tk.Button(search_frame, text="Search", command=on_search)
+tk.Label(search_frame, text="🔍", font=("Segoe UI Emoji", 12), bg="#f0f0f0").pack(
+    side="left", padx=5
+)
+# search_button.pack(side="left", padx=5)
 
 search_entry.bind("<Return>", lambda event: on_search())
 
@@ -472,9 +483,36 @@ tree.column("part_No", width=100, anchor="center")
 tree.column("type", width=120, anchor="center")
 tree.column("section", width=150, anchor="center")
 tree.column("replacement", width=150, anchor="center")
-tree.column("image", width=90, anchor="center")
-tree.column("edit", width=90, anchor="center")
-tree.column("delete", width=90, anchor="center")
+tree.column("image", width=35, anchor="center")
+tree.column("edit", width=35, anchor="center")
+tree.column("delete", width=35, anchor="center")
+
+from tkinter import ttk
+
+style = ttk.Style()
+
+# Use default theme (important)
+style.theme_use("default")
+
+# Style the Treeview heading
+style.configure(
+    "Treeview.Heading",
+    background="#1f2933",  # Dark background
+    foreground="white",  # Text color
+    font=("Lato", 10, "bold"),
+    padding=8,
+)
+
+# Style the Treeview rows
+style.configure(
+    "Treeview",
+    font=("Lato", 10),
+    rowheight=28,
+    background="white",
+    fieldbackground="white",
+    foreground="#111827",
+)
+
 
 scrollbar_y = ttk.Scrollbar(root, orient="vertical", command=tree.yview)
 scrollbar_x = ttk.Scrollbar(root, orient="horizontal", command=tree.xview)
@@ -525,11 +563,11 @@ def load_parts(search_query=""):
                     ic_type or "",
                     section or "",
                     replacement or "",
-                    "View",
-                    "Edit",
-                    "Delete",
+                    "🖼️",
+                    "✏️",
+                    "🗑️",
                 ),
-                tags=("has_image", part_id, img_path),
+                tags=("has_image", str(part_id), img_path),
             )
         else:
             tree.insert(
@@ -544,31 +582,225 @@ def load_parts(search_query=""):
                     "Edit",
                     "Delete",
                 ),
-                tags=("no_image", part_id, img_path),
+                tags=("no_image", str(part_id), img_path),
             )
 
 
 def on_table_click(event):
-    region = tree.identify_region(event.x, event.y)
-    if region != "cell":
-        return
-
     column = tree.identify_column(event.x)
     item = tree.identify_row(event.y)
+    if not item:
+        return
+
+    tags = tree.item(item, "tags")
+    part_id = int(tags[1])
+    img_path = tags[2] if len(tags) > 2 else ""
 
     if column == "#5":
-        tags = tree.item(item, "tags")
-        if tags[0] == "has_image":
-            img_path = tags[2]
+        if img_path and os.path.exists(img_path):
+            os.startfile(img_path)
+        else:
+            messagebox.showwarning("No Image", "No pinout image found for this part.")
+
+    elif column == "#7":
+        if messagebox.askyesno(
+            "Confirm Delete",
+            "Are you sure you want to delete this IC part?\nThis cannot be undone.",
+            parent=root,
+        ):
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM parts WHERE id = ?", (part_id,))
+            conn.commit()
+            conn.close()
+
             if img_path and os.path.exists(img_path):
-                os.startfile(img_path)
-            else:
-                messagebox.showwarning("Missing", "Image file not found!")
+                try:
+                    os.remove(img_path)
+                except:
+                    pass
+
+            messagebox.showinfo("Deleted", "IC part deleted successfully!")
+            load_parts()
+
+    elif column == "#6":  # Edit column
+        open_edit_part(part_id)
+
+
+def open_edit_part(part_id):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT part_number, ic_type, related_section, replacement_part, image_path FROM parts WHERE id = ?",
+        (part_id,),
+    )
+    current = cursor.fetchone()
+    conn.close()
+
+    if not current:
+        messagebox.showerror("Error", "Part not found!")
+        return
+
+    (
+        current_part_num,
+        current_type,
+        current_section,
+        current_replacement,
+        current_img_path,
+    ) = current
+
+    edit_win = tk.Toplevel(root)
+    edit_win.title("Edit IC Part")
+    edit_win.configure(bg="#f0f0f0")
+    edit_win.transient(root)
+    edit_win.grab_set()
+
+    tk.Label(
+        edit_win, text="Edit IC Part", font=("Lato", 16, "bold"), bg="#f0f0f0"
+    ).pack(pady=10)
+
+    form_frame = tk.Frame(edit_win, bg="#f0f0f0")
+    form_frame.pack(pady=10, padx=20)
+
+    tk.Label(form_frame, text="Part Number:", bg="#f0f0f0").grid(
+        row=0, column=0, sticky="w", pady=5
+    )
+    part_var = tk.StringVar(value=current_part_num)
+    tk.Entry(form_frame, textvariable=part_var, width=40).grid(row=0, column=1, pady=5)
+
+    tk.Label(form_frame, text="Type:", bg="#f0f0f0").grid(
+        row=1, column=0, sticky="w", pady=5
+    )
+    type_combo = ttk.Combobox(form_frame, state="readonly", width=37)
+    type_combo.grid(row=1, column=1, pady=5)
+
+    tk.Label(form_frame, text="Related Section:", bg="#f0f0f0").grid(
+        row=2, column=0, sticky="w", pady=5
+    )
+    section_combo = ttk.Combobox(form_frame, state="readonly", width=37)
+    section_combo.grid(row=2, column=1, pady=5)
+
+    tk.Label(form_frame, text="Replacement Part:", bg="#f0f0f0").grid(
+        row=3, column=0, sticky="w", pady=5
+    )
+    replacement_var = tk.StringVar(value=current_replacement or "")
+    tk.Entry(form_frame, textvariable=replacement_var, width=40).grid(
+        row=3, column=1, pady=5
+    )
+
+    tk.Label(form_frame, text="Pinout Image:", bg="#f0f0f0").grid(
+        row=4, column=0, sticky="w", pady=5
+    )
+    image_path_var = tk.StringVar(value=current_img_path or "")
+    tk.Entry(form_frame, textvariable=image_path_var, width=30, state="readonly").grid(
+        row=4, column=1, pady=5, padx=(0, 5)
+    )
+
+    def select_new_image():
+        path = filedialog.askopenfilename(
+            filetypes=[("Image Files", "*.png *.jpg *.jpeg *.bmp *.gif")]
+        )
+        if path:
+            image_path_var.set(path)
+
+    tk.Button(form_frame, text="Change Image", command=select_new_image).grid(
+        row=4, column=1, sticky="e", pady=5
+    )
+
+    print(current_type)
+
+    def load_dropdowns():
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT type_name FROM ic_types ORDER BY type_name")
+        types = [row[0] for row in cursor.fetchall()]
+        type_combo["values"] = types
+        if current_type in types:
+            type_combo.set(current_type)
+
+        cursor.execute("SELECT section_name FROM ic_sections ORDER BY section_name")
+        sections = [row[0] for row in cursor.fetchall()]
+        section_combo["values"] = sections
+        if current_section in sections:
+            section_combo.set(current_section)
+        conn.close()
+
+    load_dropdowns()
+
+    def save_edit():
+        new_part_num = part_var.get().strip()
+        if not new_part_num:
+            messagebox.showerror("Error", "Part Number is required!")
+            return
+
+        new_type = type_combo.get()
+        new_section = section_combo.get()
+        new_replacement = replacement_var.get().strip()
+        new_img_original = image_path_var.get()
+
+        new_saved_img_path = current_img_path
+        if new_img_original and new_img_original != current_img_path:
+            filename = os.path.basename(new_img_original)
+            new_saved_img_path = os.path.join(IMAGE_DIR, f"{new_part_num}_{filename}")
+            shutil.copy(new_img_original, new_saved_img_path)
+
+            if current_img_path and os.path.exists(current_img_path):
+                try:
+                    os.remove(current_img_path)
+                except:
+                    pass
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE parts 
+            SET part_number = ?, ic_type = ?, related_section = ?, replacement_part = ?, image_path = ?
+            WHERE id = ?
+        """,
+            (
+                new_part_num,
+                new_type,
+                new_section,
+                new_replacement,
+                new_saved_img_path,
+                part_id,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        messagebox.showinfo("Updated", f"Part '{new_part_num}' updated successfully!")
+        edit_win.destroy()
+        load_parts()
+
+    tk.Button(
+        edit_win,
+        text="Save Changes",
+        bg="#27ae60",
+        fg="white",
+        width=20,
+        command=save_edit,
+    ).pack(pady=20)
+
+    edit_win.update_idletasks()
+    edit_win.wait_visibility(edit_win)
+    x = (
+        root.winfo_rootx()
+        + (root.winfo_width() // 2)
+        - (edit_win.winfo_reqwidth() // 2)
+    )
+    y = (
+        root.winfo_rooty()
+        + (root.winfo_height() // 2)
+        - (edit_win.winfo_reqheight() // 2)
+    )
+    edit_win.geometry(f"+{x}+{y}")
 
 
 def live_search(*args):
     text_user_typed = search_var.get().lower()
-    load_parts(text_user_typed)  # ← this calls with the text
+    load_parts(text_user_typed)
 
 
 search_var.trace("w", live_search)
