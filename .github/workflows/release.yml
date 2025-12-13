@@ -31,6 +31,11 @@ jobs:
       - name: Upload executable to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/TraceCore.exe
+         tag_name: ${{ github.ref_name }}
+         name: ${{ github.ref_name }}
+         draft: false
+         prerelease: false
+         files: dist/TraceCore.exe
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
