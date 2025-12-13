@@ -3,27 +3,59 @@ name: Build and Release Executable
 on:
   push:
     tags:
-      - 'v*'  # Triggers only when you push a tag like v1.0, v1.1, etc.
+      - 'v*'
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    runs-on: windows-latest  # Uses a Windows machine to build .exe
-    steps:
-      - uses: actions/checkout@v4
+    runs-on: windows-latest
 
+    steps:
+     
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
+    
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
 
+    
       - name: Build executable
-        run: pyinstaller --onefile --windowed --name "TraceCore" ic_app.py
-        # Change "ic_app.py" only if your main file has a different name
+        run: |
+          pyinstaller --onefile --windowed --name TraceCore ic_app.py
 
+     
+      - name: Debug build output
+        run: |
+          echo ===== ROOT DIRECTORY =====
+          dir
+          echo ===== DIST DIRECTORY =====
+          if exist dist (
+            dir dist
+            for /d %%D in (dist\*) do (
+              echo ===== CONTENTS OF %%D =====
+              dir %%D
+            )
+          ) else (
+            echo NO DIST DIRECTORY FOUND
+          )
+
+     
       - name: Upload executable to release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/TraceCore+r.exe
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          files: dist/**/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
