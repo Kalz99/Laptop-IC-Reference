@@ -5,9 +5,13 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: windows-latest
+
     steps:
       - uses: actions/checkout@v4
 
@@ -16,15 +20,17 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install PyInstaller
-        run: pip install pyinstaller
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller
 
       - name: Build executable
-        run: pyinstaller --onefile --windowed --name "TraceCore" ic_app.py
+        run: |
+          pyinstaller --onefile --windowed --name "TraceCore" ic_app.py
 
       - name: Upload executable to release
         uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}  # Use PAT here
         with:
           files: dist/TraceCore.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
