@@ -1,12 +1,10 @@
 [![Python Check](https://github.com/Kalz99/Laptop-IC-Reference/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/Kalz99/Laptop-IC-Reference/actions/workflows/main.yml)
-# Laptop-IC-Reference
-A simple desktop application built with Python and Tkinter for laptop repair technicians to manage a personal database of motherboard ICs.
+# TraceCore+
+A powerful desktop reference tool for laptop repair technicians, providing instant access to motherboard details, IC references, schematics, board views, BIOS files, and high-quality photos all in an offline, searchable database.
 
 ### Features
-- Add, search, and view IC details (part number, type, related section, replacement, notes)
-- Dynamic management of IC types and sections (add, edit, delete)
-- Store one pinout image per IC with thumbnail preview and click-to-view full size
-- Local SQLite database and all data saved permanently
-- Clean, easy-to-use interface with search and scrollable table
-
-Perfect for quick reference during laptop repairs. No internet or installation required (just Python + Pillow)
+-Motherboard Management: Add, edit, view, and delete detailed motherboard records, including board number, compatible laptop model(s), front and back high-resolution photos, schematic PDF files, BIOS binaries, and board view files.
+-IC/Component Reference: Searchable database of common laptop ICs with pinouts, functions, equivalents, and reference images (building on the original IC finder functionality).
+-Visual Aids: Built-in viewers for displaying motherboard photos (front/back), embedded schematic PDFs, and board view files directly within the app for quick tracing of circuits and nets.
+-Advanced Search: Real-time filtering and search across all records by model, board number, IC part number, or keywords.
+-Data Integrity: Local SQLite database for fast, reliable storage with support for file attachments (images, PDFs, BIOS).
