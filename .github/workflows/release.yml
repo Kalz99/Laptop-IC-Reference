@@ -20,7 +20,7 @@ jobs:
         run: pip install pyinstaller
 
       - name: Build executable
-        run: pyinstaller --onefile --windowed --name "TraceCore+r" ic_app.py
+        run: pyinstaller --onefile --windowed --name "TraceCore" ic_app.py
         # Change "ic_app.py" only if your main file has a different name
 
       - name: Upload executable to release
