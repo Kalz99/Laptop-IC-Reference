@@ -20,9 +20,6 @@ conn = sqlite3.connect(DB_FILE)
 cursor = conn.cursor()
 
 
-
-
-
 cursor.execute(
     """CREATE TABLE IF NOT EXISTS parts(
                id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,7 +38,6 @@ conn.commit()
 conn.close()
 IMAGE_DIR = "pinout_images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
-
 
 
 # Load the View icon (do this once, outside any function)
@@ -72,7 +68,7 @@ view_dropdown = ttk.Combobox(
     textvariable=view_var,
     state="readonly",
     width=20,
-    style="Custom.TCombobox"
+    style="Custom.TCombobox",
 )
 
 view_dropdown["values"] = ("IC Parts", "Motherboards")
@@ -87,7 +83,6 @@ search_entry = tk.Entry(
     search_frame, textvariable=search_var, width=25, font=("Arial", 12)
 )
 search_entry.pack(side="left", padx=5)
-
 
 
 def on_search():
@@ -462,7 +457,6 @@ buttons_frame = tk.Frame(content_frame, bg="#f0f0f0")
 buttons_frame.pack(pady=15)
 
 
-
 btn_addPart = tk.Button(
     search_frame,
     text="Add a Part",
@@ -480,9 +474,16 @@ columns = ("part_No", "type", "section", "replacement", "image", "edit", "delete
 
 mb_buttons_frame = tk.Frame(content_frame, bg="#f0f0f0")
 
-btn_add_mb = tk.Button(mb_buttons_frame, text="Add Motherboard", width=20, bg="#1c4d6d", fg="white", font=("Lato", 11))
+btn_add_mb = tk.Button(
+    mb_buttons_frame,
+    text="Add Motherboard",
+    width=20,
+    bg="#1c4d6d",
+    fg="white",
+    font=("Lato", 11),
+)
 btn_add_mb.pack(pady=10)
-#btn_add_mb.config(command=open_add_motherboard)
+# btn_add_mb.config(command=open_add_motherboard)
 btn_add_mb = tk.Button(
     buttons_frame,
     text="Add a Motherboard",
@@ -538,6 +539,7 @@ style.configure(
     foreground="#111827",
 )
 
+
 def on_view_change(*args):
     current = view_var.get()
     if current == "IC Parts":
@@ -550,6 +552,7 @@ def on_view_change(*args):
         buttons_frame.pack_forget()
         mb_buttons_frame.pack(pady=15)
         load_motherboards()
+
 
 view_var.trace("w", on_view_change)  # call when changed
 scrollbar_y = ttk.Scrollbar(root, orient="vertical", command=tree.yview)
@@ -623,13 +626,22 @@ def load_parts(search_query=""):
                 tags=("no_image", str(part_id), img_path),
             )
 
+
 def load_motherboards():
     # Clear table
     for i in tree.get_children():
         tree.delete(i)
 
     # Change columns
-    tree["columns"] = ("mb_number", "laptop_model","front","back", "view_files","edit","delete")
+    tree["columns"] = (
+        "mb_number",
+        "laptop_model",
+        "front",
+        "back",
+        "view_files",
+        "edit",
+        "delete",
+    )
     tree.heading("mb_number", text="Motherboard Number")
     tree.heading("laptop_model", text="Laptop Model")
     tree.heading("front", text="Front Side")
@@ -649,16 +661,21 @@ def load_motherboards():
     # Load data
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("SELECT mb_number, laptop_model FROM motherboards ORDER BY mb_number")
+    cursor.execute(
+        "SELECT mb_number, laptop_model FROM motherboards ORDER BY mb_number"
+    )
     rows = cursor.fetchall()
     conn.close()
 
     for row in rows:
         mb_num, model = row
-        tree.insert("", "end", values=(mb_num, model or "", "View Files"), tags=(mb_num,))
+        tree.insert(
+            "", "end", values=(mb_num, model or "", "View Files"), tags=(mb_num,)
+        )
 
     # Click handler
     tree.bind("<Button-1>", on_mb_click)
+
 
 def on_mb_click(event):
     col = tree.identify_column(event.x)
@@ -669,7 +686,8 @@ def on_mb_click(event):
         if os.path.exists(mb_folder):
             os.startfile(mb_folder)
         else:
-            messagebox.showinfo("Empty", "No files yet for this motherboard")    
+            messagebox.showinfo("Empty", "No files yet for this motherboard")
+
 
 def on_table_click(event):
     column = tree.identify_column(event.x)
@@ -885,7 +903,6 @@ def open_edit_part(part_id):
 def live_search(*args):
     text_user_typed = search_var.get().lower()
     load_parts(text_user_typed)
-
 
 
 search_var.trace("w", live_search)
