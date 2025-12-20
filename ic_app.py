@@ -10,11 +10,18 @@ root = tk.Tk()
 root.title("TraceCore+")
 root.geometry("1200x800")
 root.configure(bg="#f0f0f0")
-
+content_frame = tk.Frame(root, bg="#f0f0f0")
+content_frame.pack(fill="both", expand=True, pady=10)
+style = ttk.Style()
+style.theme_use("clam")  # IMPORTANT: clam allows full styling
 DB_FILE = "ic_finder_db.db"
 
 conn = sqlite3.connect(DB_FILE)
 cursor = conn.cursor()
+
+
+
+
 
 cursor.execute(
     """CREATE TABLE IF NOT EXISTS parts(
@@ -35,6 +42,8 @@ conn.close()
 IMAGE_DIR = "pinout_images"
 os.makedirs(IMAGE_DIR, exist_ok=True)
 
+
+
 # Load the View icon (do this once, outside any function)
 view_icon_path = "view_ico.png"  # put your PNG file name here
 if os.path.exists(view_icon_path):
@@ -44,7 +53,7 @@ else:
     view_photo = None  # fallback if file not found
 
 title_label = tk.Label(
-    root,
+    content_frame,
     text="TraceCore+",
     font=("Lato", 20, "bold"),
     bg="#f0f0f0",
@@ -52,7 +61,25 @@ title_label = tk.Label(
 )
 title_label.pack(pady=15)
 
-search_frame = tk.Frame(root, bg="#f0f0f0")
+
+dropdown_frame = tk.Frame(content_frame, bg="#f0f0f0")
+dropdown_frame.pack(pady=15)
+
+view_var = tk.StringVar(value="IC Parts")
+
+view_dropdown = ttk.Combobox(
+    dropdown_frame,
+    textvariable=view_var,
+    state="readonly",
+    width=20,
+    style="Custom.TCombobox"
+)
+
+view_dropdown["values"] = ("IC Parts", "Motherboards")
+view_dropdown.pack(side="left", padx=20)
+view_dropdown.bind("<FocusIn>", lambda e: view_dropdown.selection_clear())
+
+search_frame = tk.Frame(content_frame, bg="#f0f0f0")
 search_frame.pack(pady=10)
 
 search_var = tk.StringVar()
@@ -60,6 +87,7 @@ search_entry = tk.Entry(
     search_frame, textvariable=search_var, width=25, font=("Arial", 12)
 )
 search_entry.pack(side="left", padx=5)
+
 
 
 def on_search():
@@ -430,11 +458,13 @@ tk.Label(search_frame, text="🔍", font=("Segoe UI Emoji", 12), bg="#f0f0f0").p
 
 search_entry.bind("<Return>", lambda event: on_search())
 
-buttons_frame = tk.Frame(root, bg="#f0f0f0")
+buttons_frame = tk.Frame(content_frame, bg="#f0f0f0")
 buttons_frame.pack(pady=15)
 
+
+
 btn_addPart = tk.Button(
-    buttons_frame,
+    search_frame,
     text="Add a Part",
     width=10,
     bg="#1c4d6d",
@@ -444,29 +474,25 @@ btn_addPart = tk.Button(
 
 btn_addPart.pack(side="left", padx=20)
 btn_addPart.config(command=open_add_part)
-btn_addType = tk.Button(
+
+
+columns = ("part_No", "type", "section", "replacement", "image", "edit", "delete")
+
+mb_buttons_frame = tk.Frame(content_frame, bg="#f0f0f0")
+
+btn_add_mb = tk.Button(mb_buttons_frame, text="Add Motherboard", width=20, bg="#1c4d6d", fg="white", font=("Lato", 11))
+btn_add_mb.pack(pady=10)
+#btn_add_mb.config(command=open_add_motherboard)
+btn_add_mb = tk.Button(
     buttons_frame,
-    text="Add a Type",
-    width=10,
-    bg="#1c4d6d",
-    fg="white",
-    font=("Lato", 11),
-)
-btn_addType.pack(side="left", padx=15)
-btn_addType.config(command=open_manage_types)
-btn_addSection = tk.Button(
-    buttons_frame,
-    text="Add a Related Section",
+    text="Add a Motherboard",
     width=18,
     bg="#1c4d6d",
     fg="white",
     font=("Lato", 11),
 )
-btn_addSection.pack(side="left", padx=15)
-btn_addSection.config(command=open_related_section)
-columns = ("part_No", "type", "section", "replacement", "image", "edit", "delete")
 
-tree = ttk.Treeview(root, columns=columns, show="headings", height=10)
+tree = ttk.Treeview(content_frame, columns=columns, show="headings", height=10)
 tree.pack(fill="both", expand=True, padx=30, pady=20)
 
 
@@ -490,10 +516,10 @@ tree.column("delete", width=35, anchor="center")
 
 style = ttk.Style()
 
-# Use default theme (important)
+
 style.theme_use("default")
 
-# Style the Treeview heading
+
 style.configure(
     "Treeview.Heading",
     background="#1f2933",  # Dark background
@@ -502,7 +528,7 @@ style.configure(
     padding=8,
 )
 
-# Style the Treeview rows
+
 style.configure(
     "Treeview",
     font=("Lato", 10),
@@ -512,7 +538,20 @@ style.configure(
     foreground="#111827",
 )
 
+def on_view_change(*args):
+    current = view_var.get()
+    if current == "IC Parts":
+        # Show IC stuff
+        buttons_frame.pack(pady=15)  # show the 3 buttons
+        mb_buttons_frame.pack_forget()
+        load_parts()  # your current load_parts renamed to load_ic_parts
+    else:  # Motherboards
+        # Hide IC buttons
+        buttons_frame.pack_forget()
+        mb_buttons_frame.pack(pady=15)
+        load_motherboards()
 
+view_var.trace("w", on_view_change)  # call when changed
 scrollbar_y = ttk.Scrollbar(root, orient="vertical", command=tree.yview)
 scrollbar_x = ttk.Scrollbar(root, orient="horizontal", command=tree.xview)
 tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
@@ -584,6 +623,53 @@ def load_parts(search_query=""):
                 tags=("no_image", str(part_id), img_path),
             )
 
+def load_motherboards():
+    # Clear table
+    for i in tree.get_children():
+        tree.delete(i)
+
+    # Change columns
+    tree["columns"] = ("mb_number", "laptop_model","front","back", "view_files","edit","delete")
+    tree.heading("mb_number", text="Motherboard Number")
+    tree.heading("laptop_model", text="Laptop Model")
+    tree.heading("front", text="Front Side")
+    tree.heading("back", text="Back Side")
+    tree.heading("view_files", text="View Files")
+    tree.heading("edit", text="Edit")
+    tree.heading("delete", text="Delete")
+
+    tree.column("mb_number", width=100, anchor="center")
+    tree.column("laptop_model", width=100, anchor="center")
+    tree.column("front", width=100, anchor="center")
+    tree.column("back", width=100, anchor="center")
+    tree.column("view_files", width=100, anchor="center")
+    tree.column("edit", width=100, anchor="center")
+    tree.column("delete", width=100, anchor="center")
+
+    # Load data
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT mb_number, laptop_model FROM motherboards ORDER BY mb_number")
+    rows = cursor.fetchall()
+    conn.close()
+
+    for row in rows:
+        mb_num, model = row
+        tree.insert("", "end", values=(mb_num, model or "", "View Files"), tags=(mb_num,))
+
+    # Click handler
+    tree.bind("<Button-1>", on_mb_click)
+
+def on_mb_click(event):
+    col = tree.identify_column(event.x)
+    item = tree.identify_row(event.y)
+    if col == "#3" and item:  # View Files column
+        tags = tree.item(item, "tags")
+        mb_folder = os.path.join("motherboards", tags[0])
+        if os.path.exists(mb_folder):
+            os.startfile(mb_folder)
+        else:
+            messagebox.showinfo("Empty", "No files yet for this motherboard")    
 
 def on_table_click(event):
     column = tree.identify_column(event.x)
@@ -801,7 +887,8 @@ def live_search(*args):
     load_parts(text_user_typed)
 
 
+
 search_var.trace("w", live_search)
 tree.bind("<Button-1>", on_table_click)
-load_parts()
+on_view_change()
 root.mainloop()
