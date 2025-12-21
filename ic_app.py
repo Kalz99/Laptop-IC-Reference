@@ -10,84 +10,19 @@ root = tk.Tk()
 root.title("TraceCore+")
 root.geometry("1200x800")
 root.configure(bg="#f0f0f0")
-content_frame = tk.Frame(root, bg="#f0f0f0")
-content_frame.pack(fill="both", expand=True, pady=10)
 style = ttk.Style()
-style.theme_use("clam")  # IMPORTANT: clam allows full styling
+style.theme_use("clam")
 DB_FILE = "ic_finder_db.db"
 
 conn = sqlite3.connect(DB_FILE)
 cursor = conn.cursor()
 
 
-cursor.execute(
-    """CREATE TABLE IF NOT EXISTS parts(
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               part_number TEXT NOT NULL,
-               ic_type TEXT,
-               related_section TEXT,
-               replacement_part TEXT,
-               image_path TEXT
-               )"""
-)
-
-cursor.execute("CREATE TABLE IF NOT EXISTS ic_types (type_name TEXT UNIQUE)")
-cursor.execute("CREATE TABLE IF NOT EXISTS ic_sections (section_name TEXT UNIQUE)")
-
-conn.commit()
-conn.close()
-IMAGE_DIR = "pinout_images"
-os.makedirs(IMAGE_DIR, exist_ok=True)
+root.overrideredirect(True)
 
 
-# Load the View icon (do this once, outside any function)
-view_icon_path = "view_ico.png"  # put your PNG file name here
-if os.path.exists(view_icon_path):
-    img = Image.open("view_ico.png").resize((20, 20), Image.LANCZOS)
-    view_icon = ImageTk.PhotoImage(img)
-else:
-    view_photo = None  # fallback if file not found
-
-title_label = tk.Label(
-    content_frame,
-    text="TraceCore+",
-    font=("Lato", 20, "bold"),
-    bg="#f0f0f0",
-    fg="#2c3e50",
-)
-title_label.pack(pady=15)
-
-
-dropdown_frame = tk.Frame(content_frame, bg="#f0f0f0")
-dropdown_frame.pack(pady=15)
-
-view_var = tk.StringVar(value="IC Parts")
-
-view_dropdown = ttk.Combobox(
-    dropdown_frame,
-    textvariable=view_var,
-    state="readonly",
-    width=20,
-    style="Custom.TCombobox",
-)
-
-view_dropdown["values"] = ("IC Parts", "Motherboards")
-view_dropdown.pack(side="left", padx=20)
-view_dropdown.bind("<FocusIn>", lambda e: view_dropdown.selection_clear())
-
-search_frame = tk.Frame(content_frame, bg="#f0f0f0")
-search_frame.pack(pady=10)
-
-search_var = tk.StringVar()
-search_entry = tk.Entry(
-    search_frame, textvariable=search_var, width=25, font=("Arial", 12)
-)
-search_entry.pack(side="left", padx=5)
-
-
-def on_search():
-    query = search_var.get().strip().lower()
-    load_parts(search_query=query)
+top_bar = tk.Frame(root, bg="#1c4d6d", height=40)
+top_bar.pack(fill="x", side="top")
 
 
 # Start of the Mange Types
@@ -315,6 +250,194 @@ def open_related_section():
 
 # End of manage sections
 
+menu_frame = tk.Frame(top_bar, bg="#1c4d6d")
+menu_frame.pack(side="left", padx=5)
+
+
+file_label = tk.Label(
+    menu_frame, text="File", font=("Lato", 12), bg="#1c4d6d", fg="white"
+)
+file_label.pack(side="left", padx=10)
+
+
+view_label = tk.Label(
+    menu_frame, text="Add", font=("Lato", 12), bg="#1c4d6d", fg="white"
+)
+view_label.pack(side="left", padx=10)
+
+help_label = tk.Label(
+    menu_frame, text="Help", font=("Lato", 12), bg="#1c4d6d", fg="white"
+)
+help_label.pack(side="left", padx=10)
+
+
+right_frame = tk.Frame(top_bar, bg="#1c4d6d")
+right_frame.pack(side="right")
+
+tk.Button(
+    right_frame,
+    text="─",
+    width=3,
+    font=("Arial", 12),
+    bg="#1c4d6d",
+    fg="white",
+    relief="flat",
+    command=lambda: root.state("iconic"),
+).pack(side="left", padx=2)
+tk.Button(
+    right_frame,
+    text="□",
+    width=3,
+    font=("Arial", 12),
+    bg="#1c4d6d",
+    fg="white",
+    relief="flat",
+    command=lambda: (
+        root.state("zoomed") if root.state() != "zoomed" else root.state("normal")
+    ),
+).pack(side="left", padx=2)
+tk.Button(
+    right_frame,
+    text="✕",
+    width=3,
+    font=("Arial", 12, "bold"),
+    bg="#c0392b",
+    fg="white",
+    relief="flat",
+    command=root.destroy,
+).pack(side="left", padx=2)
+
+
+def start_move(event):
+    root.x = event.x
+    root.y = event.y
+
+
+def do_move(event):
+    x = root.winfo_x() + event.x - root.x
+    y = root.winfo_y() + event.y - root.y
+    root.geometry(f"+{x}+{y}")
+
+
+top_bar.bind("<ButtonPress-1>", start_move)
+top_bar.bind("<B1-Motion>", do_move)
+
+
+file_popup = tk.Menu(root, tearoff=0, bg="#fcfcfc", fg="black")
+file_popup.add_command(label="Add IC Type", command=open_manage_types)
+file_popup.add_command(label="Add Related Section", command=open_related_section)
+file_popup.add_separator()
+file_popup.add_command(label="Exit", command=root.quit)
+
+
+edit_popup = tk.Menu(root, tearoff=0, bg="#ffffff", fg="black")
+
+
+help_popup = tk.Menu(root, tearoff=0, bg="#ffffff", fg="black")
+help_popup.add_command(
+    label="About", command=lambda: messagebox.showinfo("About", "TraceCore+ v1.0")
+)
+
+
+file_label.bind("<Button-1>", lambda e: file_popup.tk_popup(e.x_root, e.y_root))
+view_label.bind("<Button-1>", lambda e: view_popup.tk_popup(e.x_root, e.y_root))
+help_label.bind("<Button-1>", lambda e: help_popup.tk_popup(e.x_root, e.y_root))
+
+content_frame = tk.Frame(root, bg="#f0f0f0")
+content_frame.pack(fill="both", expand=True, pady=10)
+
+cursor.execute(
+    """CREATE TABLE IF NOT EXISTS parts(
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               part_number TEXT NOT NULL,
+               ic_type TEXT,
+               related_section TEXT,
+               replacement_part TEXT,
+               image_path TEXT
+               )"""
+)
+
+cursor.execute("CREATE TABLE IF NOT EXISTS ic_types (type_name TEXT UNIQUE)")
+cursor.execute("CREATE TABLE IF NOT EXISTS ic_sections (section_name TEXT UNIQUE)")
+
+cursor.execute(
+    """
+CREATE TABLE IF NOT EXISTS motherboards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    mb_number TEXT NOT NULL UNIQUE,
+    laptop_model TEXT,
+    generation TEXT,
+    front_image TEXT,
+    back_image TEXT,
+    schematic TEXT,
+    boardview TEXT,
+    bios TEXT
+)
+"""
+)
+
+conn.commit()
+conn.close()
+IMAGE_DIR = "pinout_images"
+os.makedirs(IMAGE_DIR, exist_ok=True)
+MB_DIR = "motherboards"
+os.makedirs(MB_DIR, exist_ok=True)
+
+
+view_icon_path = "view_ico.png"  # put your PNG file name here
+if os.path.exists(view_icon_path):
+    img = Image.open("view_ico.png").resize((20, 20), Image.LANCZOS)
+    view_icon = ImageTk.PhotoImage(img)
+else:
+    view_photo = None  # fallback if file not found
+
+title_label = tk.Label(
+    content_frame,
+    text="TraceCore+",
+    font=("Lato", 20, "bold"),
+    bg="#f0f0f0",
+    fg="#2c3e50",
+)
+title_label.pack(pady=15)
+
+top_container = tk.Frame(content_frame, bg="#f0f0f0")
+top_container.pack(fill="x", pady=10)
+
+dropdown_frame = tk.Frame(top_container, bg="#f0f0f0")
+dropdown_frame.pack(pady=15)
+
+view_var = tk.StringVar(value="IC Components")
+
+view_dropdown = ttk.Combobox(
+    dropdown_frame,
+    textvariable=view_var,
+    state="readonly",
+    width=20,
+    style="Custom.TCombobox",
+)
+
+view_dropdown["values"] = ("IC Components", "Motherboards")
+view_dropdown.pack(side="left", padx=20)
+view_dropdown.bind("<FocusIn>", lambda e: view_dropdown.selection_clear())
+
+# Search and buttons frame for components
+search_frameParts = tk.Frame(top_container, bg="#f0f0f0")
+search_frameParts.pack(pady=10)
+
+search_var = tk.StringVar()
+search_entry = tk.Entry(
+    search_frameParts, textvariable=search_var, width=25, font=("Arial", 12)
+)
+search_entry.pack(side="left", padx=5)
+tk.Label(search_frameParts, text="🔍", font=("Segoe UI Emoji", 12), bg="#f0f0f0").pack(
+    side="left", padx=5
+)
+
+
+def on_search():
+    query = search_var.get().strip().lower()
+    load_parts(search_query=query)
+
 
 # Start of Add a IC
 def open_add_part():
@@ -445,53 +568,147 @@ def open_add_part():
 
 # End of the Add a IC
 
-# search_button = tk.Button(search_frame, text="Search", command=on_search)
-tk.Label(search_frame, text="🔍", font=("Segoe UI Emoji", 12), bg="#f0f0f0").pack(
-    side="left", padx=5
-)
-# search_button.pack(side="left", padx=5)
+
+# Start of Add motherbaord
+def open_add_motherboard():
+    win = tk.Toplevel(root)
+    win.title("Add Motherboard")
+    win.configure(bg="#f0f0f0")
+    win.transient(root)
+    win.grab_set()
+
+    tk.Label(
+        win, text="Add New Motherboard", font=("Lato", 16, "bold"), bg="#f0f0f0"
+    ).pack(pady=20)
+
+    form = tk.Frame(win, bg="#f0f0f0")
+    form.pack(padx=20, pady=10)
+
+    labels = [
+        "Motherboard Number:*",
+        "Laptop Model:",
+        "Generation:",
+        "Front Side Image:",
+        "Back Side Image:",
+        "Schematic (PDF/any):",
+        "Board View (any):",
+        "BIOS (any):",
+    ]
+    vars_list = [tk.StringVar() for _ in labels]
+
+    for i, label_text in enumerate(labels):
+        tk.Label(form, text=label_text, bg="#f0f0f0").grid(
+            row=i, column=0, sticky="w", pady=8, padx=(0, 10)
+        )
+        if i <= 2:  # Text entries
+            tk.Entry(form, textvariable=vars_list[i], width=50).grid(
+                row=i, column=1, pady=8
+            )
+        else:  # File entries
+            tk.Entry(form, textvariable=vars_list[i], width=40, state="readonly").grid(
+                row=i, column=1, pady=5, padx=(0, 5)
+            )
+            tk.Button(
+                form, text="Browse", command=lambda idx=i: browse_file(vars_list[idx])
+            ).grid(row=i, column=1, sticky="e", pady=8)
+
+    def browse_file(var):
+        path = filedialog.askopenfilename()
+        if path:
+            var.set(path)
+
+    def save_mb():
+        mb_num = vars_list[0].get().strip()
+        if not mb_num:
+            messagebox.showerror("Error", "Motherboard Number required!")
+            return
+
+        # Create folder for this motherboard
+        mb_folder = os.path.join(MB_DIR, mb_num)
+        os.makedirs(mb_folder, exist_ok=True)
+
+        saved_paths = [None] * 5  # front, back, schematic, boardview, bios
+        for i in range(3, 8):  # files
+            path = vars_list[i].get()
+            if path:
+                filename = os.path.basename(path)
+                dest = os.path.join(mb_folder, filename)
+                shutil.copy(path, dest)
+                saved_paths[i - 3] = dest  # save path for DB
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """
+                INSERT INTO motherboards (mb_number, laptop_model, generation, front_image, back_image, schematic, boardview, bios)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (mb_num, vars_list[1].get(), vars_list[2].get(), *saved_paths),
+            )
+            conn.commit()
+            messagebox.showinfo("Success", f"Motherboard '{mb_num}' added!")
+            win.destroy()
+            load_motherboards()
+        except sqlite3.IntegrityError:
+            messagebox.showerror("Error", "Motherboard number already exists!")
+        finally:
+            conn.close()
+
+    tk.Button(
+        win,
+        text="Save Motherboard",
+        bg="#27ae60",
+        fg="white",
+        width=25,
+        command=save_mb,
+    ).pack(pady=30)
+
+    # Center window
+    win.update_idletasks()
+    x = root.winfo_rootx() + (root.winfo_width() // 2) - (win.winfo_reqwidth() // 2)
+    y = root.winfo_rooty() + (root.winfo_height() // 2) - (win.winfo_reqheight() // 2)
+    win.geometry(f"+{x}+{y}")
+
+
+# End of add motherboard
 
 search_entry.bind("<Return>", lambda event: on_search())
 
-buttons_frame = tk.Frame(content_frame, bg="#f0f0f0")
-buttons_frame.pack(pady=15)
+# buttons_frame = tk.Frame(top_container, bg="#f0f0f0")
+# buttons_frame.pack(pady=15)
 
 
-btn_addPart = tk.Button(
-    search_frame,
-    text="Add a Part",
-    width=10,
-    bg="#1c4d6d",
-    fg="white",
-    font=("Lato", 11),
-)
+# btn_addPart = tk.Button(
+#  buttons_frame,
+#  text="Add a Component",
+#  width=20,
+# bg="#1c4d6d",
+#  fg="white",
+# font=("Lato", 11),
+# )
 
-btn_addPart.pack(side="left", padx=20)
-btn_addPart.config(command=open_add_part)
+# btn_addPart.pack(side="left", padx=20)
+# btn_addPart.config(command=open_add_part)
 
+view_popup = tk.Menu(root, tearoff=0, bg="#ffffff", fg="black")
+view_popup.add_command(label="Add a Component", command=open_add_part)
+view_popup.add_command(label="Add a Motherboard", command=open_add_motherboard)
 
 columns = ("part_No", "type", "section", "replacement", "image", "edit", "delete")
 
-mb_buttons_frame = tk.Frame(content_frame, bg="#f0f0f0")
+# mb_buttons_frame = tk.Frame(top_container, bg="#f0f0f0")
 
-btn_add_mb = tk.Button(
-    mb_buttons_frame,
-    text="Add Motherboard",
-    width=20,
-    bg="#1c4d6d",
-    fg="white",
-    font=("Lato", 11),
-)
-btn_add_mb.pack(pady=10)
+# btn_add_mb = tk.Button(
+# mb_buttons_frame,
+# text="Add Motherboard",
+# width=20,
+# bg="#1c4d6d",
+# fg="white",
+# font=("Lato", 11),
+# )
+# btn_add_mb.pack(pady=15)
 # btn_add_mb.config(command=open_add_motherboard)
-btn_add_mb = tk.Button(
-    buttons_frame,
-    text="Add a Motherboard",
-    width=18,
-    bg="#1c4d6d",
-    fg="white",
-    font=("Lato", 11),
-)
 
 tree = ttk.Treeview(content_frame, columns=columns, show="headings", height=10)
 tree.pack(fill="both", expand=True, padx=30, pady=20)
@@ -541,16 +758,43 @@ style.configure(
 
 
 def on_view_change(*args):
+    search_var.set("")
     current = view_var.get()
-    if current == "IC Parts":
+
+    if current == "IC Components":
         # Show IC stuff
-        buttons_frame.pack(pady=15)  # show the 3 buttons
-        mb_buttons_frame.pack_forget()
+        # buttons_frame.pack(pady=15)  # show the 3 buttons
+        # mb_buttons_frame.pack_forget()
+        # Reset columns to IC mode
+        tree["columns"] = (
+            "part_No",
+            "type",
+            "section",
+            "replacement",
+            "image",
+            "edit",
+            "delete",
+        )
+        tree.heading("part_No", text="Part Number")
+        tree.heading("type", text="Type")
+        tree.heading("section", text="Related Section")
+        tree.heading("replacement", text="Replacement Part")
+        tree.heading("image", text="Image")
+        tree.heading("edit", text="Edit")
+        tree.heading("delete", text="Delete")
+
+        tree.column("part_No", width=100, anchor="center")
+        tree.column("type", width=120, anchor="center")
+        tree.column("section", width=150, anchor="center")
+        tree.column("replacement", width=150, anchor="center")
+        tree.column("image", width=90, anchor="center")
+        tree.column("edit", width=90, anchor="center")
+        tree.column("delete", width=90, anchor="center")
         load_parts()  # your current load_parts renamed to load_ic_parts
     else:  # Motherboards
         # Hide IC buttons
-        buttons_frame.pack_forget()
-        mb_buttons_frame.pack(pady=15)
+        # buttons_frame.pack_forget()
+        # mb_buttons_frame.pack(pady=10)
         load_motherboards()
 
 
@@ -627,66 +871,104 @@ def load_parts(search_query=""):
             )
 
 
-def load_motherboards():
-    # Clear table
+def load_motherboards(search_query=""):
     for i in tree.get_children():
         tree.delete(i)
 
-    # Change columns
     tree["columns"] = (
         "mb_number",
         "laptop_model",
-        "front",
-        "back",
+        "generation",
         "view_files",
         "edit",
         "delete",
     )
     tree.heading("mb_number", text="Motherboard Number")
     tree.heading("laptop_model", text="Laptop Model")
-    tree.heading("front", text="Front Side")
-    tree.heading("back", text="Back Side")
+    tree.heading("generation", text="Generation")
     tree.heading("view_files", text="View Files")
     tree.heading("edit", text="Edit")
     tree.heading("delete", text="Delete")
 
-    tree.column("mb_number", width=100, anchor="center")
-    tree.column("laptop_model", width=100, anchor="center")
-    tree.column("front", width=100, anchor="center")
-    tree.column("back", width=100, anchor="center")
-    tree.column("view_files", width=100, anchor="center")
+    tree.column("mb_number", width=250, anchor="center")
+    tree.column("laptop_model", width=300, anchor="center")
+    tree.column("generation", width=150, anchor="center")
+    tree.column("view_files", width=150, anchor="center")
     tree.column("edit", width=100, anchor="center")
     tree.column("delete", width=100, anchor="center")
 
-    # Load data
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute(
-        "SELECT mb_number, laptop_model FROM motherboards ORDER BY mb_number"
-    )
+
+    if search_query:
+        cursor.execute(
+            """
+            SELECT id, mb_number, laptop_model, generation 
+            FROM motherboards 
+            WHERE lower(mb_number) LIKE ? 
+            ORDER BY mb_number
+        """,
+            (f"%{search_query}%",),
+        )
+    else:
+        cursor.execute(
+            "SELECT id, mb_number, laptop_model, generation FROM motherboards ORDER BY mb_number"
+        )
+
     rows = cursor.fetchall()
     conn.close()
 
     for row in rows:
-        mb_num, model = row
+        mb_id, mb_num, model, gen = row
         tree.insert(
-            "", "end", values=(mb_num, model or "", "View Files"), tags=(mb_num,)
+            "",
+            "end",
+            values=(mb_num, model or "", gen or "", "View", "✏️", "🗑️"),
+            tags=(str(mb_id), mb_num),
         )
 
-    # Click handler
     tree.bind("<Button-1>", on_mb_click)
 
 
 def on_mb_click(event):
     col = tree.identify_column(event.x)
     item = tree.identify_row(event.y)
-    if col == "#3" and item:  # View Files column
-        tags = tree.item(item, "tags")
-        mb_folder = os.path.join("motherboards", tags[0])
+    if not item:
+        return
+
+    tags = tree.item(item, "tags")
+    mb_id = int(tags[0])
+    mb_num = tags[1]
+
+    if col == "#4":  # View Files
+        mb_folder = os.path.join(MB_DIR, mb_num)
         if os.path.exists(mb_folder):
             os.startfile(mb_folder)
         else:
-            messagebox.showinfo("Empty", "No files yet for this motherboard")
+            messagebox.showinfo("Empty", "No files yet for this motherboard.")
+
+    elif col == "#5":  # Edit
+        open_edit_motherboard(mb_id)
+
+    elif col == "#6":  # Delete
+        if messagebox.askyesno(
+            "Confirm Delete",
+            f"Delete motherboard '{mb_num}'?\nThis will remove all files and data!",
+            parent=root,
+        ):
+            conn = sqlite3.connect(DB_FILE)
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM motherboards WHERE id = ?", (mb_id,))
+            conn.commit()
+            conn.close()
+
+            # Delete folder
+            mb_folder = os.path.join(MB_DIR, mb_num)
+            if os.path.exists(mb_folder):
+                shutil.rmtree(mb_folder)
+
+            messagebox.showinfo("Deleted", f"Motherboard '{mb_num}' deleted!")
+            load_motherboards()
 
 
 def on_table_click(event):
@@ -900,9 +1182,161 @@ def open_edit_part(part_id):
     edit_win.geometry(f"+{x}+{y}")
 
 
+def open_edit_motherboard(mb_id):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT mb_number, laptop_model, generation, front_image, back_image, schematic, boardview, bios FROM motherboards WHERE id = ?",
+        (mb_id,),
+    )
+    current = cursor.fetchone()
+    conn.close()
+
+    if not current:
+        messagebox.showerror("Error", "Motherboard not found!")
+        return
+
+    current_mb_num, current_model, current_gen, front_img, back_img, sch, bv, bios = (
+        current
+    )
+
+    edit_win = tk.Toplevel(root)
+    edit_win.title("Edit Motherboard")
+    edit_win.configure(bg="#f0f0f0")
+    edit_win.transient(root)
+    edit_win.grab_set()
+
+    tk.Label(
+        edit_win, text="Edit Motherboard", font=("Lato", 16, "bold"), bg="#f0f0f0"
+    ).pack(pady=20)
+
+    form = tk.Frame(edit_win, bg="#f0f0f0")
+    form.pack(padx=20, pady=10)
+
+    tk.Label(form, text="Motherboard Number:", bg="#f0f0f0").grid(
+        row=0, column=0, sticky="w", pady=8
+    )
+    mb_var = tk.StringVar(value=current_mb_num)
+    tk.Entry(form, textvariable=mb_var, width=50).grid(row=0, column=1, pady=8)
+
+    tk.Label(form, text="Laptop Model:", bg="#f0f0f0").grid(
+        row=1, column=0, sticky="w", pady=8
+    )
+    model_var = tk.StringVar(value=current_model or "")
+    tk.Entry(form, textvariable=model_var, width=50).grid(row=1, column=1, pady=8)
+
+    tk.Label(form, text="Generation:", bg="#f0f0f0").grid(
+        row=2, column=0, sticky="w", pady=8
+    )
+    gen_var = tk.StringVar(value=current_gen or "")
+    tk.Entry(form, textvariable=gen_var, width=50).grid(row=2, column=1, pady=8)
+
+    file_vars = [
+        tk.StringVar(value=front_img or ""),
+        tk.StringVar(value=back_img or ""),
+        tk.StringVar(value=sch or ""),
+        tk.StringVar(value=bv or ""),
+        tk.StringVar(value=bios or ""),
+    ]
+    labels = [
+        "Front Side Image:",
+        "Back Side Image:",
+        "Schematic:",
+        "Board View:",
+        "BIOS:",
+    ]
+
+    for i, label_text in enumerate(labels):
+        tk.Label(form, text=label_text, bg="#f0f0f0").grid(
+            row=i + 3, column=0, sticky="w", pady=8, padx=(0, 10)
+        )
+        tk.Entry(form, textvariable=file_vars[i], width=40, state="readonly").grid(
+            row=i + 3, column=1, pady=8, padx=(0, 5)
+        )
+        tk.Button(
+            form, text="Change", command=lambda idx=i: browse_file(file_vars[idx])
+        ).grid(row=i + 3, column=1, sticky="e", pady=8)
+
+    def browse_file(var):
+        path = filedialog.askopenfilename()
+        if path:
+            var.set(path)
+
+    def save_edit():
+        new_mb_num = mb_var.get().strip()
+        if not new_mb_num:
+            messagebox.showerror(
+                "Error", "Motherboard Number required!", parent=edit_win
+            )
+            return
+
+        # Update folder if number changed
+        old_folder = os.path.join(MB_DIR, current_mb_num)
+        new_folder = os.path.join(MB_DIR, new_mb_num)
+        if new_mb_num != current_mb_num:
+            os.rename(old_folder, new_folder)
+
+        saved_paths = []
+        for i in range(5):
+            path = file_vars[i].get()
+            if path and path != [front_img, back_img, sch, bv, bios][i]:
+                filename = os.path.basename(path)
+                dest = os.path.join(new_folder, filename)
+                shutil.copy(path, dest)
+                saved_paths.append(dest)
+            else:
+                saved_paths.append([front_img, back_img, sch, bv, bios][i])
+
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            UPDATE motherboards 
+            SET mb_number = ?, laptop_model = ?, generation = ?, front_image = ?, back_image = ?, schematic = ?, boardview = ?, bios = ?
+            WHERE id = ?
+        """,
+            (new_mb_num, model_var.get(), gen_var.get(), *saved_paths, mb_id),
+        )
+        conn.commit()
+        conn.close()
+
+        messagebox.showinfo(
+            "Updated", f"Motherboard '{new_mb_num}' updated!", parent=edit_win
+        )
+        edit_win.destroy()
+        load_motherboards()
+
+    tk.Button(
+        edit_win,
+        text="Save Changes",
+        bg="#27ae60",
+        fg="white",
+        width=25,
+        command=save_edit,
+    ).pack(pady=30)
+
+    # Center window
+    edit_win.update_idletasks()
+    x = (
+        root.winfo_rootx()
+        + (root.winfo_width() // 2)
+        - (edit_win.winfo_reqwidth() // 2)
+    )
+    y = (
+        root.winfo_rooty()
+        + (root.winfo_height() // 2)
+        - (edit_win.winfo_reqheight() // 2)
+    )
+    edit_win.geometry(f"+{x}+{y}")
+
+
 def live_search(*args):
-    text_user_typed = search_var.get().lower()
-    load_parts(text_user_typed)
+    query = search_var.get().lower()
+    current = view_var.get()
+    if current == "IC Components":
+        load_parts(search_query=query)
+    else:
+        load_motherboards(search_query=query)
 
 
 search_var.trace("w", live_search)
