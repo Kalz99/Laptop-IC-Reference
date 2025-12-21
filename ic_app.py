@@ -335,7 +335,7 @@ edit_popup = tk.Menu(root, tearoff=0, bg="#ffffff", fg="black")
 
 help_popup = tk.Menu(root, tearoff=0, bg="#ffffff", fg="black")
 help_popup.add_command(
-    label="About", command=lambda: messagebox.showinfo("About", "TraceCore+ v1.0")
+    label="About", command=lambda: messagebox.showinfo("About", "TraceCore+ v2.2")
 )
 
 
