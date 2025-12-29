@@ -5,10 +5,26 @@ import sqlite3
 from PIL import Image, ImageTk  # noqa: F401
 from tkinter import filedialog
 import shutil
+import sys
+
+def single_instance():
+    import ctypes
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    process_id = os.getpid()
+    mutex_name = f"TraceCorePlus_{process_id}"
+
+    mutex = kernel32.CreateMutexW(None, True, mutex_name)
+    if kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
+        messagebox.showinfo("Already Running", "TraceCore+ is already running!")
+        sys.exit(0)
+
+single_instance()  # Call it early
 
 root = tk.Tk()
 root.title("TraceCore+")
-root.geometry("1200x800")
+root.geometry("1200x700")
 root.configure(bg="#f0f0f0")
 style = ttk.Style()
 style.theme_use("clam")
@@ -18,11 +34,10 @@ conn = sqlite3.connect(DB_FILE)
 cursor = conn.cursor()
 
 
-root.overrideredirect(True)
+#root.overrideredirect(True)
 
 
-top_bar = tk.Frame(root, bg="#1c4d6d", height=40)
-top_bar.pack(fill="x", side="top")
+
 
 
 # Start of the Mange Types
@@ -250,98 +265,22 @@ def open_related_section():
 
 # End of manage sections
 
-menu_frame = tk.Frame(top_bar, bg="#1c4d6d")
-menu_frame.pack(side="left", padx=5)
+menubar = tk.Menu(root, bg="#edf0f1", fg="white", activebackground="#d4d8da", activeforeground="white")
+root.config(menu=menubar)
 
+file_menu = tk.Menu(menubar, tearoff=0, bg="#edf0f1", fg="black")
+menubar.add_cascade(label="File", menu=file_menu)
+file_menu.add_command(label="Add IC Type...", command=open_manage_types)
+file_menu.add_command(label="Add Related Section...", command=open_related_section)
+file_menu.add_separator()
+file_menu.add_command(label="Exit", command=root.quit)
 
-file_label = tk.Label(
-    menu_frame, text="File", font=("Lato", 12), bg="#1c4d6d", fg="white"
-)
-file_label.pack(side="left", padx=10)
+add_menu = tk.Menu(menubar, tearoff=0, bg="#edf0f1", fg="black")
+menubar.add_cascade(label="Add", menu=add_menu)
 
-
-view_label = tk.Label(
-    menu_frame, text="Add", font=("Lato", 12), bg="#1c4d6d", fg="white"
-)
-view_label.pack(side="left", padx=10)
-
-help_label = tk.Label(
-    menu_frame, text="Help", font=("Lato", 12), bg="#1c4d6d", fg="white"
-)
-help_label.pack(side="left", padx=10)
-
-
-right_frame = tk.Frame(top_bar, bg="#1c4d6d")
-right_frame.pack(side="right")
-
-tk.Button(
-    right_frame,
-    text="─",
-    width=3,
-    font=("Arial", 12),
-    bg="#1c4d6d",
-    fg="white",
-    relief="flat",
-    command=lambda: root.state("iconic"),
-).pack(side="left", padx=2)
-tk.Button(
-    right_frame,
-    text="□",
-    width=3,
-    font=("Arial", 12),
-    bg="#1c4d6d",
-    fg="white",
-    relief="flat",
-    command=lambda: (
-        root.state("zoomed") if root.state() != "zoomed" else root.state("normal")
-    ),
-).pack(side="left", padx=2)
-tk.Button(
-    right_frame,
-    text="✕",
-    width=3,
-    font=("Arial", 12, "bold"),
-    bg="#c0392b",
-    fg="white",
-    relief="flat",
-    command=root.destroy,
-).pack(side="left", padx=2)
-
-
-def start_move(event):
-    root.x = event.x
-    root.y = event.y
-
-
-def do_move(event):
-    x = root.winfo_x() + event.x - root.x
-    y = root.winfo_y() + event.y - root.y
-    root.geometry(f"+{x}+{y}")
-
-
-top_bar.bind("<ButtonPress-1>", start_move)
-top_bar.bind("<B1-Motion>", do_move)
-
-
-file_popup = tk.Menu(root, tearoff=0, bg="#fcfcfc", fg="black")
-file_popup.add_command(label="Add IC Type", command=open_manage_types)
-file_popup.add_command(label="Add Related Section", command=open_related_section)
-file_popup.add_separator()
-file_popup.add_command(label="Exit", command=root.quit)
-
-
-edit_popup = tk.Menu(root, tearoff=0, bg="#ffffff", fg="black")
-
-
-help_popup = tk.Menu(root, tearoff=0, bg="#ffffff", fg="black")
-help_popup.add_command(
-    label="About", command=lambda: messagebox.showinfo("About", "TraceCore+ v2.2")
-)
-
-
-file_label.bind("<Button-1>", lambda e: file_popup.tk_popup(e.x_root, e.y_root))
-view_label.bind("<Button-1>", lambda e: view_popup.tk_popup(e.x_root, e.y_root))
-help_label.bind("<Button-1>", lambda e: help_popup.tk_popup(e.x_root, e.y_root))
+help_menu = tk.Menu(menubar, tearoff=0, bg="#edf0f1", fg="black")
+menubar.add_cascade(label="Help", menu=help_menu)
+help_menu.add_command(label="About", command=lambda: messagebox.showinfo("About", "TraceCore+ v2.3"))
 
 content_frame = tk.Frame(root, bg="#f0f0f0")
 content_frame.pack(fill="both", expand=True, pady=10)
@@ -408,17 +347,34 @@ dropdown_frame.pack(pady=15)
 
 view_var = tk.StringVar(value="IC Components")
 
-view_dropdown = ttk.Combobox(
-    dropdown_frame,
-    textvariable=view_var,
-    state="readonly",
-    width=20,
-    style="Custom.TCombobox",
-)
+view_buttons_frame = tk.Frame(dropdown_frame, bg="#f0f0f0")
+view_buttons_frame.pack(side="left")
 
-view_dropdown["values"] = ("IC Components", "Motherboards")
-view_dropdown.pack(side="left", padx=20)
-view_dropdown.bind("<FocusIn>", lambda e: view_dropdown.selection_clear())
+# IC Button
+ic_btn = tk.Button(view_buttons_frame, text="IC Components", width=12, font=("Lato", 8,"bold"),
+                   bg="#3881b1", fg="white", relief="flat")
+ic_btn.pack(side="left")
+
+# Motherboard Button
+mb_btn = tk.Button(view_buttons_frame, text="Motherboards", width=12, font=("Lato", 8,"bold"),
+                   bg="#e0e0e0", fg="#333333", relief="flat")
+mb_btn.pack(side="left", padx=5)
+
+
+# Switch function (updates view_var and highlights buttons)
+def switch_view(view):
+    if view == "IC":
+        view_var.set("IC Components")  # updates the variable → triggers trace
+        ic_btn.config(bg="#3881b1", fg="white")
+        mb_btn.config(bg="#e0e0e0", fg="#333333")
+    else:
+        view_var.set("Motherboards")
+        ic_btn.config(bg="#e0e0e0", fg="#333333")
+        mb_btn.config(bg="#3881b1", fg="white")
+
+# Connect buttons to switch function
+ic_btn.config(command=lambda: switch_view("IC"))
+mb_btn.config(command=lambda: switch_view("MB"))
 
 # Search and buttons frame for components
 search_frameParts = tk.Frame(top_container, bg="#f0f0f0")
@@ -710,8 +666,38 @@ columns = ("part_No", "type", "section", "replacement", "image", "edit", "delete
 # btn_add_mb.pack(pady=15)
 # btn_add_mb.config(command=open_add_motherboard)
 
-tree = ttk.Treeview(content_frame, columns=columns, show="headings", height=10)
-tree.pack(fill="both", expand=True, padx=30, pady=20)
+# Style (must be after ttk.Style())
+style = ttk.Style()
+style.theme_use("clam")
+
+style.configure("Vertical.TScrollbar",
+                gripcount=0,
+                background="#aa1a1a",  # thumb color when normal
+                troughcolor="#f0f0f0", # background of scrollbar
+                width=16,              # thicker
+                arrowsize=16)
+
+style.map("Vertical.TScrollbar",
+          background=[("active", "#1c4d6d")],  # blue when hovered
+          arrowcolor=[("active", "white")])
+
+# Container for tree and scrollbars (inside content_frame)
+tree_frame = tk.Frame(content_frame, bg="#f0f0f0")
+tree_frame.pack(fill="both", expand=True, padx=30, pady=20)
+
+# Treeview
+tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
+tree.grid(row=0, column=0, sticky="nsew")
+
+# Vertical scrollbar with style
+scrollbar_y = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview, style="Vertical.TScrollbar")
+scrollbar_y.grid(row=0, column=1, sticky="ns")
+tree.configure(yscrollcommand=scrollbar_y.set)
+
+# Make tree expand
+tree_frame.grid_rowconfigure(0, weight=1)
+tree_frame.grid_columnconfigure(0, weight=1)
+
 
 
 tree.heading("part_No", text="Part Number")
@@ -799,11 +785,6 @@ def on_view_change(*args):
 
 
 view_var.trace("w", on_view_change)  # call when changed
-scrollbar_y = ttk.Scrollbar(root, orient="vertical", command=tree.yview)
-scrollbar_x = ttk.Scrollbar(root, orient="horizontal", command=tree.xview)
-tree.configure(yscrollcommand=scrollbar_y.set, xscrollcommand=scrollbar_x.set)
-scrollbar_y.pack(side="right", fill="y")  # Vertical scrollbar on the right
-scrollbar_x.pack(side="bottom", fill="x")  # Horizontal at the bottom
 
 
 def load_parts(search_query=""):
@@ -864,12 +845,12 @@ def load_parts(search_query=""):
                     section or "",
                     replacement or "",
                     "",
-                    "Edit",
-                    "Delete",
+                    "✏️",
+                    "🗑️",
                 ),
                 tags=("no_image", str(part_id), img_path),
             )
-
+    tree.bind("<Button-1>", on_table_click)
 
 def load_motherboards(search_query=""):
     for i in tree.get_children():
@@ -1342,4 +1323,6 @@ def live_search(*args):
 search_var.trace("w", live_search)
 tree.bind("<Button-1>", on_table_click)
 on_view_change()
+add_menu.add_command(label="Add a Part", command=open_add_part)
+add_menu.add_command(label="Add Motherboard", command=open_add_motherboard)
 root.mainloop()
