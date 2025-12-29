@@ -7,11 +7,12 @@ from tkinter import filedialog
 import shutil
 import sys
 
+
 def single_instance():
     import ctypes
     from ctypes import wintypes
 
-    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     process_id = os.getpid()
     mutex_name = f"TraceCorePlus_{process_id}"
 
@@ -19,6 +20,7 @@ def single_instance():
     if kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
         messagebox.showinfo("Already Running", "TraceCore+ is already running!")
         sys.exit(0)
+
 
 single_instance()  # Call it early
 
@@ -34,10 +36,7 @@ conn = sqlite3.connect(DB_FILE)
 cursor = conn.cursor()
 
 
-#root.overrideredirect(True)
-
-
-
+# root.overrideredirect(True)
 
 
 # Start of the Mange Types
@@ -265,7 +264,9 @@ def open_related_section():
 
 # End of manage sections
 
-menubar = tk.Menu(root, bg="#edf0f1", fg="white", activebackground="#d4d8da", activeforeground="white")
+menubar = tk.Menu(
+    root, bg="#edf0f1", fg="white", activebackground="#d4d8da", activeforeground="white"
+)
 root.config(menu=menubar)
 
 file_menu = tk.Menu(menubar, tearoff=0, bg="#edf0f1", fg="black")
@@ -280,7 +281,9 @@ menubar.add_cascade(label="Add", menu=add_menu)
 
 help_menu = tk.Menu(menubar, tearoff=0, bg="#edf0f1", fg="black")
 menubar.add_cascade(label="Help", menu=help_menu)
-help_menu.add_command(label="About", command=lambda: messagebox.showinfo("About", "TraceCore+ v2.3"))
+help_menu.add_command(
+    label="About", command=lambda: messagebox.showinfo("About", "TraceCore+ v2.3")
+)
 
 content_frame = tk.Frame(root, bg="#f0f0f0")
 content_frame.pack(fill="both", expand=True, pady=10)
@@ -351,13 +354,27 @@ view_buttons_frame = tk.Frame(dropdown_frame, bg="#f0f0f0")
 view_buttons_frame.pack(side="left")
 
 # IC Button
-ic_btn = tk.Button(view_buttons_frame, text="IC Components", width=12, font=("Lato", 8,"bold"),
-                   bg="#3881b1", fg="white", relief="flat")
+ic_btn = tk.Button(
+    view_buttons_frame,
+    text="IC Components",
+    width=12,
+    font=("Lato", 8, "bold"),
+    bg="#3881b1",
+    fg="white",
+    relief="flat",
+)
 ic_btn.pack(side="left")
 
 # Motherboard Button
-mb_btn = tk.Button(view_buttons_frame, text="Motherboards", width=12, font=("Lato", 8,"bold"),
-                   bg="#e0e0e0", fg="#333333", relief="flat")
+mb_btn = tk.Button(
+    view_buttons_frame,
+    text="Motherboards",
+    width=12,
+    font=("Lato", 8, "bold"),
+    bg="#e0e0e0",
+    fg="#333333",
+    relief="flat",
+)
 mb_btn.pack(side="left", padx=5)
 
 
@@ -371,6 +388,7 @@ def switch_view(view):
         view_var.set("Motherboards")
         ic_btn.config(bg="#e0e0e0", fg="#333333")
         mb_btn.config(bg="#3881b1", fg="white")
+
 
 # Connect buttons to switch function
 ic_btn.config(command=lambda: switch_view("IC"))
@@ -670,16 +688,20 @@ columns = ("part_No", "type", "section", "replacement", "image", "edit", "delete
 style = ttk.Style()
 style.theme_use("clam")
 
-style.configure("Vertical.TScrollbar",
-                gripcount=0,
-                background="#aa1a1a",  # thumb color when normal
-                troughcolor="#f0f0f0", # background of scrollbar
-                width=16,              # thicker
-                arrowsize=16)
+style.configure(
+    "Vertical.TScrollbar",
+    gripcount=0,
+    background="#aa1a1a",  # thumb color when normal
+    troughcolor="#f0f0f0",  # background of scrollbar
+    width=16,  # thicker
+    arrowsize=16,
+)
 
-style.map("Vertical.TScrollbar",
-          background=[("active", "#1c4d6d")],  # blue when hovered
-          arrowcolor=[("active", "white")])
+style.map(
+    "Vertical.TScrollbar",
+    background=[("active", "#1c4d6d")],  # blue when hovered
+    arrowcolor=[("active", "white")],
+)
 
 # Container for tree and scrollbars (inside content_frame)
 tree_frame = tk.Frame(content_frame, bg="#f0f0f0")
@@ -690,14 +712,15 @@ tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
 tree.grid(row=0, column=0, sticky="nsew")
 
 # Vertical scrollbar with style
-scrollbar_y = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview, style="Vertical.TScrollbar")
+scrollbar_y = ttk.Scrollbar(
+    tree_frame, orient="vertical", command=tree.yview, style="Vertical.TScrollbar"
+)
 scrollbar_y.grid(row=0, column=1, sticky="ns")
 tree.configure(yscrollcommand=scrollbar_y.set)
 
 # Make tree expand
 tree_frame.grid_rowconfigure(0, weight=1)
 tree_frame.grid_columnconfigure(0, weight=1)
-
 
 
 tree.heading("part_No", text="Part Number")
@@ -851,6 +874,7 @@ def load_parts(search_query=""):
                 tags=("no_image", str(part_id), img_path),
             )
     tree.bind("<Button-1>", on_table_click)
+
 
 def load_motherboards(search_query=""):
     for i in tree.get_children():
