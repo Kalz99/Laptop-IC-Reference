@@ -10,13 +10,13 @@ import sys
 
 def single_instance():
     import ctypes
-    from ctypes import wintypes
+    import os
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)
     process_id = os.getpid()
     mutex_name = f"TraceCorePlus_{process_id}"
 
-    mutex = kernel32.CreateMutexW(None, True, mutex_name)
+    kernel32.CreateMutexW(None, True, mutex_name)  # no assignment
     if kernel32.GetLastError() == 183:  # ERROR_ALREADY_EXISTS
         messagebox.showinfo("Already Running", "TraceCore+ is already running!")
         sys.exit(0)
